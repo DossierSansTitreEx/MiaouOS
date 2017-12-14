@@ -29,7 +29,59 @@ start:
     jmp 0:relocated
 
 relocated:
-    jmp $
+    ; Clear screen
+    mov ax, 0x0003
+    int 0x10
+
+    ; Hide cursor
+    mov ah, 0x01
+    mov ch, 0x3f
+    int 0x10
+
+    ; Try to find an active partition
+    mov si, MBR.Partitions
+.loop:
+    call try_boot
+    add si, 0x10
+    cmp si, MBR.Partitions + 0x40
+    jne .loop
+
+    mov si, msg
+    call print
+    
+.halt
+    ; Halt forever
+    hlt
+    jmp .halt
+
+try_boot:
+    ret
+
+print:
+    pusha
+
+    xor dx, dx
+    mov bx, 0x0007
+    mov cx, 1
+
+.loop:
+    mov ah, 0x02
+    int 0x10
+    inc dx
+
+    mov al, [si]
+    test al, al
+    jz .loop_end
+    mov ah, 0x09
+    int 0x10
+    inc si
+    jmp .loop
+
+.loop_end:
+    popa
+    ret
+
+msg: db 'No Operating System found.', 0
 
 times (0x1b4 - ($-$$)) db 0
 
