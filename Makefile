@@ -5,7 +5,7 @@ CROSS_CC		:= $(ARCH)-gcc
 CROSS_LD		:= $(ARCH)-ld
 CROSS_OBJCOPY	:= $(ARCH)-objcopy
 
-BOOTLOADER_CFLAGS	:= -ffreestanding -nostdlib -fno-builtin -fPIC -mno-red-zone -mcmodel=small -O2 -Wall -Wextra
+BOOTLOADER_CFLAGS	:= -ffreestanding -nostdlib -z max-page-size=0x1000 -fno-builtin -fPIC -mno-red-zone -mcmodel=small -O2 -Wall -Wextra
 
 MAKE_VOLUME		:= tools/make_volume
 VOLUME_FILE		:= Volume.txt
@@ -26,7 +26,7 @@ BOOTLOADER_PARTITION	:= $(BUILD_DIR)/boot/bootloader_partition
 EFFEL					:= $(BUILD_DIR)/effel/effel
 EFFEL_SRC				:= $(shell find src/effel -name '*.c')
 EFFEL_OBJ				:= $(EFFEL_SRC:src/%.c=$(BUILD_DIR)/%.o)
-EFFEL_CFLAGS			:= -ffreestanding -nostdlib -fno-builtin -mno-red-zone -mcmodel=kernel -O2 -Wall -Wextra
+EFFEL_CFLAGS			:= -ffreestanding -nostdlib -z max-page-size=0x1000 -fno-builtin -mno-red-zone -mcmodel=kernel -O2 -Wall -Wextra
 
 .PHONY: all
 all: image

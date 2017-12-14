@@ -32,6 +32,12 @@ long_mode:
 
 SECTION .text
 GLOBAL disk_read
+GLOBAL enter_kernel
+
+enter_kernel:
+    mov rax, rdi
+    mov rdi, rsi
+    jmp 0x08:rax
 
 ; RDI - destination
 ; RSI - LBA

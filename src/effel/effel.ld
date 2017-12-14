@@ -3,7 +3,7 @@ SECTIONS
 {
     _KERNEL_BASE_ = 0xffffffff80000000;
 
-    .text(_KERNEL_BASE_) : {
+    .text(_KERNEL_BASE_) : ALIGN(0x1000) {
         *(.text)
     }
 
