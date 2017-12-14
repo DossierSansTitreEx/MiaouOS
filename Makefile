@@ -5,14 +5,14 @@ MKIMAGE		:= tools/mkimage
 BUILD_DIR	:= build
 
 IMAGE		:= $(BUILD_DIR)/image.img
-MBR			:= $(BUILD_DIR)/boot/mbr
+STAGE1		:= $(BUILD_DIR)/boot/stage1
 
 .PHONY: all
 all: image
 
 .PHONY: clean
 clean:
-	rm -rf $(MBR)
+	rm -rf $(STAGE1)
 
 .PHONY: mrproper
 mrproper:
@@ -28,13 +28,13 @@ run: $(IMAGE)
 .PHONY: image
 image: $(IMAGE)
 
-$(IMAGE): $(MBR) $(MKIMAGE)
+$(IMAGE): $(STAGE1) $(MKIMAGE)
 	@mkdir -p $(dir $@)
-	$(MKIMAGE) $@ $(MBR)
+	$(MKIMAGE) $@ $(STAGE1)
 
 .PHONY: mbr
-mbr: $(MBR)
+mbr: $(STAGE1)
 
-$(MBR): src/boot/mbr.S
+$(STAGE1): src/boot/stage1.S
 	@mkdir -p $(dir $@)
 	$(YASM) -f bin -o $@ $<
