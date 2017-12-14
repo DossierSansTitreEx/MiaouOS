@@ -5,7 +5,8 @@ CROSS_CC		:= $(ARCH)-gcc
 CROSS_LD		:= $(ARCH)-ld
 CROSS_OBJCOPY	:= $(ARCH)-objcopy
 
-MKIMAGE		:= tools/mkimage
+MAKE_VOLUME		:= tools/make_volume
+VOLUME_FILE		:= Volume.txt
 
 BUILD_DIR	:= build
 
@@ -42,9 +43,9 @@ run: $(IMAGE)
 .PHONY: image
 image: $(IMAGE)
 
-$(IMAGE): $(BOOTLOADER_VOLUME) $(BOOTLOADER_PARTITION) $(MKIMAGE)
+$(IMAGE): $(BOOTLOADER_VOLUME) $(BOOTLOADER_PARTITION) $(MAKE_VOLUME) $(VOLUME_FILE)
 	@mkdir -p $(dir $@)
-	$(MKIMAGE) $@ $(BOOTLOADER_VOLUME) $(BOOTLOADER_PARTITION)
+	$(MAKE_VOLUME) $(VOLUME_FILE) $@
 
 $(BOOTLOADER_VOLUME): $(STAGE1)
 	@mkdir -p $(dir $@)

@@ -1,0 +1,4 @@
+SIZE 32M
+
+BOOTLOADER_VOLUME       build/boot/bootloader_volume
+BOOTLOADER_PARTITION    build/boot/bootloader_partition
