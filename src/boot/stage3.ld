@@ -1,10 +1,10 @@
 SECTIONS
 {
-	.text BLOCK(1) : ALIGN(1)
-	{
+	.text : {
 		*(.start)
 		*(.text)
 		*(.data)
 		*(.rodata)
+        *(.bss)
 	}
 }

@@ -1,8 +1,9 @@
 [BITS 16]
 [ORG 0x7c00]
 
-PML4 equ 0x1000
-PDP  equ 0x2000
+PML4        equ 0x1000
+PDP         equ 0x2000
+MEMORY_INFO equ 0x3000
 
 start:
     cli
@@ -40,9 +41,13 @@ GDT:
 ; This structure will be passed to the kernel
 ALIGN 16
 BOOT_INFO:
-.mbr
+.memory_size:
     dq 0
-.drive
+.memory_ptr:
+    dq MEMORY_INFO
+.mbr:
+    dq 0
+.drive:
     db 0
 ALIGN 16, db 0
 
@@ -63,6 +68,9 @@ stack_setup:
 
     ; Enable the A20 gate to prepare for long mode
     call fast_a20
+
+    ; Load the memory map
+    call detect_memory
 
     ; Zero the page tables
     mov di, PML4
@@ -111,6 +119,8 @@ stack_setup:
     ; Load the GDT
     lgdt [GDT.Descriptor]
 
+    mov edi, BOOT_INFO
+
     ; Jump into long mode
     jmp 0x08:long_mode
 
@@ -154,6 +164,45 @@ disable_irq:
     out 0x21, al
     nop
     nop
+    ret
+
+detect_memory:
+    xor ax, ax
+    push ax
+
+    mov esi, 0x00000003
+    mov di, MEMORY_INFO
+    xor ebx, ebx
+    mov edx, 0x534D4150
+    mov eax, 0xe820
+    mov ecx, 24
+
+.loop:
+    ; Get a memory entry
+    int 0x15
+
+    ; Check if this was the last one
+    jc .end
+    test ebx, ebx
+    jz .end
+
+    ; Check if the entry is an acpi-extended one
+    cmp cl, 24
+    je .acpi
+    mov [di + 20], esi
+
+.acpi:
+    add di, 24
+    pop ax
+    inc ax
+    push ax
+    mov eax, 0xe820
+    mov ecx, 24
+    jmp .loop
+
+.end:
+    pop ax
+    mov [BOOT_INFO.memory_size], ax
     ret
 
 long_mode:
