@@ -31,6 +31,12 @@ start:
 relocated:
     jmp $
 
-times (510 - ($-$$)) db 0
+times (0x1b4 - ($-$$)) db 0
 
-dw 0xaa55
+MBR:
+.ID:
+    times 10 db 0
+.Partitions:
+    times 64 db 0
+.Signature:
+    dw 0xaa55

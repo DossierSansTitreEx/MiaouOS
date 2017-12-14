@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+require 'securerandom'
+
 # In MiB
 IMAGE_SIZE = 32
 
@@ -18,4 +20,17 @@ File.open(ARGV.shift, "wb") do |file|
   end
   file.rewind
   file.write(File.binread ARGV.shift)
+  # We fix the mbr values
+  partition = []
+  partition << 0x80
+  partition << 0x00
+  partition << 41
+  partition << 0x7f
+  partition << 254
+  partition << (((CYLINDERS - 1) << 8) | SECTORS)
+  partition << 40
+  partition << (REAL_SIZE / SECTOR_SIZE) - 40
+  file.seek(0x1b4)
+  file.write(SecureRandom.bytes(10))
+  file.write(partition.pack("CCS<CCS<L<L<"))
 end
