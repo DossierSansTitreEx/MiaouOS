@@ -198,8 +198,6 @@ module MakeVolume
       size = data.size
       addr = chunk_addr(chunk)
       @buffer.write(addr + 0x38, [size].pack("Q<"))
-      head, data = slice_data(data, 0xee0)
-      @buffer.write(addr + 0x120, head)
       12.times do |i|
         break if data.nil?
         head, data = slice_data(data, CHUNK_SIZE)

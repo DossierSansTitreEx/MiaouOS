@@ -112,6 +112,88 @@ uint64_t next_free_page(boot_params* params)
     return 0;
 }
 
+static int strequ(const char* s1, const char* s2)
+{
+    int i;
+
+    i = 0;
+    while (s1[i] == s2[i])
+    {
+        i++;
+        if (s1[i] == 0)
+            return 1;
+    }
+    return 0;
+}
+
+static char* disk_buffer(uint64_t lba, uint64_t count)
+{
+    char* dst;
+
+    dst = (char*)0x10000;
+    disk_read(dst, lba, count);
+    return dst;
+}
+
+static char* load_chunk(boot_params* params, uint64_t chunk)
+{
+    uint64_t lba;
+
+    lba = params->mbr->lba_base + 40 + chunk * 8;
+    return disk_buffer(lba, 8);
+}
+
+static char* load_inode(boot_params* params, uint64_t inode)
+{
+    return load_chunk(params, inode);
+}
+
+static uint64_t find_child(boot_params* params, uint64_t parent, const char* child_name)
+{
+    char* buf;
+    char name[256];
+    uint16_t namelen;
+    uint64_t tmp;
+    int i;
+
+    buf = load_inode(params, parent);
+    tmp = *(uint64_t*)(buf + 0x40);
+    buf = load_inode(params, tmp);
+    for (;;)
+    {
+        namelen = *(uint16_t*)(buf);
+        buf += 2;
+        for (i = 0; i < namelen; ++i)
+            name[i] = buf[i];
+        name[i] = 0;
+        buf += namelen;
+        tmp = *(uint64_t*)(buf);
+        buf += 8;
+        if (strequ(name, child_name))
+            return tmp;
+    }
+}
+
+static void load_effel(boot_params* params)
+{
+    uint64_t inode;
+    char* buffer;
+
+    buffer = load_inode(params, 0x0);
+    inode = *(uint64_t*)(buffer + 0x18);
+    puts(buffer);
+    print("Root: ");
+    print_hex(inode);
+    putchar('\n');
+
+    inode = find_child(params, inode, "boot");
+    inode = find_child(params, inode, "effel");
+
+    print("Found kernel inode: ");
+    print_hex(inode);
+    putchar('\n');
+}
+
 void start(boot_params* params)
 {
     monitor = (char*)0xb8000;
@@ -132,6 +214,8 @@ void start(boot_params* params)
     putchar('\n');
 
     dump_memory_map(params);
+
+    load_effel(params);
 
     for (;;) {}
 }

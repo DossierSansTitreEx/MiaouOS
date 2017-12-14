@@ -37,7 +37,7 @@ The first chunk (including the VBR) is reserved. The second chunk contains the h
 | idata2         | 0x8  | 0x108   | The second indirect pointer   |
 | idata3         | 0x8  | 0x110   | The third indirect pointer    |
 | idata4         | 0x8  | 0x118   | Because we can                |
-| rdata          | 0xee0| 0x120   | Raw inode data                |
+| rdata          | 0xee0| 0x120   | Raw inode data (unused)       |
 
 ## Directories
 
