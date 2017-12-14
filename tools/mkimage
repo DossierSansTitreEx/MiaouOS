@@ -1,0 +1,21 @@
+#!/usr/bin/env ruby
+
+# In MiB
+IMAGE_SIZE = 32
+
+SECTOR_SIZE = 512
+SECTORS = 63
+HEADS = 255
+CYLINDERS = ((IMAGE_SIZE * 1024 * 1024).to_f / (SECTOR_SIZE * SECTORS * HEADS)).ceil
+
+REAL_SIZE = CYLINDERS * HEADS * SECTORS * SECTOR_SIZE
+
+BUFFER = ("\x00".force_encoding('binary')) * SECTOR_SIZE
+
+File.open(ARGV.shift, "wb") do |file|
+  (REAL_SIZE / SECTOR_SIZE).times do
+    file.write(BUFFER)
+  end
+  file.rewind
+  file.write(File.binread ARGV.shift)
+end

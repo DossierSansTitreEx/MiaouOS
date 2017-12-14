@@ -1,0 +1,26 @@
+plugin_ctrl: unmapped=1, biosdev=1, speaker=1, extfpuirq=1, parallel=1, serial=1, iodebug=1
+config_interface: textconfig
+megs: 512
+romimage: file="/usr/local/share/bochs/BIOS-bochs-latest"
+vgaromimage: file="/usr/local/share/bochs/VGABIOS-lgpl-latest"
+floppy_bootsig_check: disabled=0
+ata0-master: type=disk, path="build/image.img", mode=flat, translation=lba
+ata0: enabled=1, ioaddr1=0x1f0, ioaddr2=0x3f0, irq=14
+boot: disk
+pci: enabled=1, chipset=i440fx
+vga: extension=vbe, update_freq=5
+cpu: count=1, ips=10000000, quantum=16, model=corei7_haswell_4770, reset_on_triple_fault=1
+magic_break: enabled=1
+clock: sync=none, time0=local, rtc_sync=0
+panic: action=fatal
+error: action=report
+info: action=report
+debug: action=ignore
+keyboard: type=mf, serial_delay=250, paste_delay=100000, keymap=
+mouse: enabled=1, type=ps2, toggle=ctrl+mbutton
+parport1: enabled=1, file=""
+parport2: enabled=0
+com1: enabled=1, mode=null, dev=""
+com2: enabled=0
+com3: enabled=0
+com4: enabled=0
