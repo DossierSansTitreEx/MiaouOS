@@ -26,9 +26,35 @@ start:
     rep movsw
 
     ; Jump to the correct address
-    jmp 0:relocated
+    jmp 0x00:load_stage1
 
-relocated:
+DAPACK_STAGE1:
+    db  0x10
+    db  0
+    dw  39
+    dw  0x800
+    dw  0
+    dd  1
+    dd  0
+
+load_stage1:
+    ; Load stage1
+    mov si, DAPACK_STAGE1
+    mov ah, 0x42
+    int 0x13
+    jmp 0x00:stage1
+
+times (0x1b4 - ($-$$)) db 0
+
+MBR:
+.ID:
+    times 10 db 0
+.Partitions:
+    times 64 db 0
+.Signature:
+    dw 0xaa55
+
+stage1:
     ; Clear screen
     mov ax, 0x0003
     int 0x10
@@ -48,7 +74,7 @@ relocated:
 
     mov si, msg
     call print
-    
+
 .halt
     ; Halt forever
     hlt
@@ -82,13 +108,3 @@ print:
     ret
 
 msg: db 'No Operating System found.', 0
-
-times (0x1b4 - ($-$$)) db 0
-
-MBR:
-.ID:
-    times 10 db 0
-.Partitions:
-    times 64 db 0
-.Signature:
-    dw 0xaa55
