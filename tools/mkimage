@@ -20,6 +20,7 @@ File.open(ARGV.shift, "wb") do |file|
   end
   file.rewind
   file.write(File.binread ARGV.shift)
+
   # We fix the mbr values
   partition = []
   partition << 0x80
@@ -33,4 +34,8 @@ File.open(ARGV.shift, "wb") do |file|
   file.seek(0x1b4)
   file.write(SecureRandom.bytes(10))
   file.write(partition.pack("CCS<CCS<L<L<"))
+
+  # Inject the VBR + stage2
+  file.seek(40 * SECTOR_SIZE)
+  file.write(File.binread(ARGV.shift))
 end

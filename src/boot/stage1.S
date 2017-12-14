@@ -28,6 +28,7 @@ start:
     ; Jump to the correct address
     jmp 0x00:load_stage1
 
+ALIGN 4
 DAPACK_STAGE1:
     db  0x10
     db  0
@@ -53,6 +54,21 @@ MBR:
     times 64 db 0
 .Signature:
     dw 0xaa55
+
+; Start of sector 2
+
+ALIGN 4
+DAPACK_STAGE2:
+    db  0x10
+    db  0
+    dw  40
+    dw  0x7c00
+    dw  0
+.lba:
+    dd  0
+    dd  0
+
+msg: db 'No Operating System found.', 0
 
 stage1:
     ; Clear screen
@@ -80,7 +96,34 @@ stage1:
     hlt
     jmp .halt
 
+; si - MBR entry pointer
 try_boot:
+    ; Check for a bootable partition
+    mov al, [si]
+    test al, 0x80
+    jz .noboot
+
+    ; We found a partition with the active flag
+    push si
+    add si, 0x08
+    mov ax, [si]
+    mov [DAPACK_STAGE2.lba], ax
+    add si, 2
+    mov ax, [si]
+    mov [DAPACK_STAGE2.lba + 2], ax
+
+    ; Load the VBR
+    mov si, DAPACK_STAGE2
+    mov ah, 0x42
+    int 0x13
+
+    ; Restore the MBR pointer
+    pop si
+
+    ; Jump to stage2
+    jmp 0x0:0x7c00
+
+.noboot:
     ret
 
 print:
@@ -106,5 +149,3 @@ print:
 .loop_end:
     popa
     ret
-
-msg: db 'No Operating System found.', 0
