@@ -96,7 +96,7 @@ $(STAGE3): $(STAGE3_LOADER) $(STAGE3_MAIN) src/boot/stage3.ld
 
 $(BUILD_DIR)/effel/%.o: src/effel/%.c
 	@mkdir -p $(dir $@)
-	$(CROSS_CC) $(EFFEL_CFLAGS) -c $< -o $@
+	$(CROSS_CC) $(EFFEL_CFLAGS) -I src/effel -c $< -o $@
 
 $(EFFEL): $(EFFEL_OBJ) $(LIBK)
 	@mkdir -p $(dir $@)
