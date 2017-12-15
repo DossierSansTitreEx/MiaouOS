@@ -17,7 +17,7 @@ COMMON_CFLAGS		:= 	-Iinclude -L$(BUILD_DIR)/lib -pipe -MMD -ffreestanding -nostd
 ifneq ($(DEBUG), 0)
 	COMMON_CFLAGS += -O0 -g
 else
-	COMMON_CFLAGS += -O2
+	COMMON_CFLAGS += -O3
 endif
 
 BOOTLOADER_CFLAGS	:= $(COMMON_CFLAGS) -fno-builtin -fPIC -mcmodel=small

@@ -2,7 +2,6 @@
 #include <vmm.h>
 #include <util.h>
 
-#define PAGESIZE            4096
 #define PAGE_MASK           0xfffffffffffff000
 #define PAGE_RECURSE        0x1fe
 #define PAGES_PER_TABLE     512
