@@ -157,11 +157,6 @@ void map_page(uint64_t dst, uint16_t flags)
     pd_slot = ((dst & 0x3fe00000) >> 18);
     pt_slot = ((dst & 0x1ff000) >> 9);
 
-    print_hex(pml4_slot);
-    print_hex(pdp_slot);
-    print_hex(pd_slot);
-    print_hex(pt_slot);
-
     pml4 = 0x1000;
     pdp = create_page_layer(pml4 + pml4_slot, 3);
     pd = create_page_layer(pdp + pdp_slot, 3);
@@ -180,9 +175,16 @@ char* virtual_alloc(uint64_t dst, uint64_t size, uint16_t flags)
     dst &= 0xfffffffffffff000;
     size = end - dst;
     size = (size + 4095) / 4096;
+
+    print("MAP: ");
+    print_hex(dst);
+    print(" -> ");
+    print_hex(dst + size * 4096);
+    putchar('\n');
+
     for (uint64_t i = 0; i < size; ++i)
     {
-        map_page(dst + size * i * 4096, flags);
+        map_page(dst + i * 4096, flags);
     }
     return ptr;
 }
