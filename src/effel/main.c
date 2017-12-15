@@ -5,7 +5,7 @@
 void kmain(boot_params* params)
 {
     vmm_init(params);
-    init_screen();
+    screen_init();
     proc_init();
 
     kputs("Hello from the kernel!");

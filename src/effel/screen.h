@@ -5,6 +5,6 @@ void kscroll();
 void kputchar(char c);
 void kprint(const char* s);
 void kputs(const char* s);
-void init_screen();
+void screen_init();
 
 #endif

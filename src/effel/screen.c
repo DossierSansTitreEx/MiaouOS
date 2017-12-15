@@ -55,7 +55,7 @@ void kputs(const char* s)
     kputchar('\n');
 }
 
-void init_screen()
+void screen_init()
 {
     monitor = vmm_alloc_over(0xb8000, 80 * 25 * 2);
     cursor_x = 0;
