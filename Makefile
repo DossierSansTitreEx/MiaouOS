@@ -9,9 +9,9 @@ CROSS_AR		:= $(ARCH)-ar
 BUILD_DIR		:= build
 
 COMMON_CFLAGS		:= 	-Iinclude -L$(BUILD_DIR)/lib -pipe -MMD -ffreestanding -nostdlib \
-						-msse -msse2 -z max-page-size=0x1000 -fno-builtin -mno-red-zone  \
+						-msse -msse2 -z max-page-size=0x1000 -mno-red-zone               \
 						-O2 -Wall -Wextra
-BOOTLOADER_CFLAGS	:= $(COMMON_CFLAGS) -fPIC -mcmodel=small
+BOOTLOADER_CFLAGS	:= $(COMMON_CFLAGS) -fno-builtin -fPIC -mcmodel=small
 EFFEL_CFLAGS		:= $(COMMON_CFLAGS) -mcmodel=kernel -D__KERNEL=1
 
 MAKE_VOLUME		:= tools/make_volume
@@ -91,7 +91,7 @@ $(STAGE3_MAIN): src/boot/stage3.c
 
 $(STAGE3): $(STAGE3_LOADER) $(STAGE3_MAIN) src/boot/stage3.ld
 	@mkdir -p $(dir $@)
-	$(CROSS_CC) $(BOOTLOADER_CFLAGS) -T src/boot/stage3.ld $(STAGE3_LOADER) $(STAGE3_MAIN) -o $@.elf
+	$(CROSS_CC) $(BOOTLOADER_CFLAGS) -T src/boot/stage3.ld $(STAGE3_LOADER) $(STAGE3_MAIN) -lgcc -o $@.elf
 	$(CROSS_OBJCOPY) -O binary $@.elf $@
 
 $(BUILD_DIR)/effel/%.o: src/effel/%.c
@@ -100,7 +100,7 @@ $(BUILD_DIR)/effel/%.o: src/effel/%.c
 
 $(EFFEL): $(EFFEL_OBJ) $(LIBK)
 	@mkdir -p $(dir $@)
-	$(CROSS_CC) $(EFFEL_CFLAGS) -lk -T src/effel/effel.ld $(EFFEL_OBJ) -o $@
+	$(CROSS_CC) $(EFFEL_CFLAGS) -T src/effel/effel.ld $(EFFEL_OBJ) -lk -lgcc -o $@
 
 $(LIBK): $(LIBK_OBJ)
 	@mkdir -p $(dir $@)

@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <string.h>
 
 static char* monitor;
 static int32_t cursor_x;
@@ -6,10 +7,8 @@ static int32_t cursor_y;
 
 static void scroll()
 {
-    for (uint32_t i = 0; i < (80 * 24 * 2); ++i)
-        monitor[i] = monitor[i + 80 * 2];
-    for (uint32_t i = 0; i < 80 * 2; ++i)
-        monitor[(24 * 80 * 2) + i] = 0;
+    memmove(monitor, monitor + 80 * 2, 80 * 24 * 2);
+    memset(monitor + 80 * 24 * 2, 0, 80 * 2);
     cursor_x = 0;
     cursor_y--;
     if (cursor_y < 0)
