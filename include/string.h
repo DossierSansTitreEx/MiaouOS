@@ -12,6 +12,7 @@ void*   memmove(void* dst, const void* src, size_t len);
 void*   memchr(const void* s, int c, size_t num);
 int     memcmp(const void* s1, const void* s2, size_t n);
 void*   memset(void* b, int c, size_t len);
+char*   strcat(char* __restrict s1, const char* __restrict s2);
 size_t  strlen(const char* s) __attribute__((pure));
 __END_DECL
 
