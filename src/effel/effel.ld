@@ -1,4 +1,4 @@
-ENTRY(kmain)
+ENTRY(__start)
 SECTIONS
 {
     _KERNEL_BASE_ = 0xffffffff80000000;

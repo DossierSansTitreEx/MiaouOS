@@ -29,8 +29,8 @@ STAGE3_LOADER	:= $(BUILD_DIR)/boot/stage3_loader.o
 BOOTLOADER_VOLUME		:= $(BUILD_DIR)/boot/bootloader_volume
 BOOTLOADER_PARTITION	:= $(BUILD_DIR)/boot/bootloader_partition
 EFFEL					:= $(BUILD_DIR)/effel/effel
-EFFEL_SRC				:= $(shell find src/effel -name '*.c')
-EFFEL_OBJ				:= $(EFFEL_SRC:src/%.c=$(BUILD_DIR)/%.o)
+EFFEL_SRC				:= $(shell find src/effel -name '*.c' -or -name '*.S')
+EFFEL_OBJ				:= $(EFFEL_SRC:src/%=$(BUILD_DIR)/%.o)
 
 LIBK					:= $(BUILD_DIR)/lib/libk.a
 LIBK_SRC				:= $(shell find src/libc -name '*.c')
@@ -94,9 +94,13 @@ $(STAGE3): $(STAGE3_LOADER) $(STAGE3_MAIN) src/boot/stage3.ld
 	$(CROSS_CC) $(BOOTLOADER_CFLAGS) -T src/boot/stage3.ld $(STAGE3_LOADER) $(STAGE3_MAIN) -lgcc -o $@.elf
 	$(CROSS_OBJCOPY) -O binary $@.elf $@
 
-$(BUILD_DIR)/effel/%.o: src/effel/%.c
+$(BUILD_DIR)/effel/%.c.o: src/effel/%.c
 	@mkdir -p $(dir $@)
 	$(CROSS_CC) $(EFFEL_CFLAGS) -I src/effel -c $< -o $@
+
+$(BUILD_DIR)/effel/%.S.o: src/effel/%.S
+	@mkdir -p $(dir $@)
+	$(YASM) -f elf64 $< -o $@
 
 $(EFFEL): $(EFFEL_OBJ) $(LIBK)
 	@mkdir -p $(dir $@)

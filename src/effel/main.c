@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <string.h>
+#include <vmm.h>
 
 static char* monitor;
 static int32_t cursor_x;
@@ -54,7 +55,7 @@ static void puts(const char* s)
 }
 
 
-void kmain()
+void kmain(boot_params* params)
 {
     monitor = (char*)0xb8000;
     cursor_x = 0;
@@ -63,5 +64,7 @@ void kmain()
     for (int i = 0; i < 25; ++i)
         scroll();
     puts("Hello from the kernel!");
+
+    vmm_init(params);
     for (;;) {}
 }

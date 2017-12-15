@@ -1,6 +1,8 @@
 #ifndef _VMM_H
 #define _VMM_H 1
 
-void vmm_init();
+#include <boot/boot_params.h>
+
+void vmm_init(boot_params* params);
 
 #endif
