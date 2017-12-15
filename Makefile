@@ -4,13 +4,18 @@ ARCH		:= x86_64-elf
 CROSS_CC		:= $(ARCH)-gcc
 CROSS_LD		:= $(ARCH)-ld
 CROSS_OBJCOPY	:= $(ARCH)-objcopy
+CROSS_AR		:= $(ARCH)-ar
 
-BOOTLOADER_CFLAGS	:= -ffreestanding -nostdlib -z max-page-size=0x1000 -fno-builtin -fPIC -mno-red-zone -mcmodel=small -O2 -Wall -Wextra
+BUILD_DIR		:= build
+
+COMMON_CFLAGS		:= 	-Iinclude -L$(BUILD_DIR)/lib -pipe -MMD -ffreestanding -nostdlib \
+						-msse -msse2 -z max-page-size=0x1000 -fno-builtin -mno-red-zone  \
+						-O2 -Wall -Wextra
+BOOTLOADER_CFLAGS	:= $(COMMON_CFLAGS) -fPIC -mcmodel=small
+EFFEL_CFLAGS		:= $(COMMON_CFLAGS) -mcmodel=kernel -D__KERNEL=1
 
 MAKE_VOLUME		:= tools/make_volume
 VOLUME_FILE		:= Volume.txt
-
-BUILD_DIR	:= build
 
 IMAGE			:= $(BUILD_DIR)/image.img
 
@@ -26,10 +31,17 @@ BOOTLOADER_PARTITION	:= $(BUILD_DIR)/boot/bootloader_partition
 EFFEL					:= $(BUILD_DIR)/effel/effel
 EFFEL_SRC				:= $(shell find src/effel -name '*.c')
 EFFEL_OBJ				:= $(EFFEL_SRC:src/%.c=$(BUILD_DIR)/%.o)
-EFFEL_CFLAGS			:= -ffreestanding -nostdlib -z max-page-size=0x1000 -fno-builtin -mno-red-zone -mcmodel=kernel -O2 -Wall -Wextra
+
+LIBK					:= $(BUILD_DIR)/lib/libk.a
+LIBK_SRC				:= $(shell find src/libc -name '*.c')
+LIBK_OBJ				:= $(LIBK_SRC:src/libc/%.c=$(BUILD_DIR)/obj/libk/%.o)
+
+DEPS					:= $(shell find $(BUILD_DIR) -name '*.d' 2>/dev/null)
 
 .PHONY: all
 all: image
+
+-include $(DEPS)
 
 .PHONY: clean
 clean:
@@ -75,7 +87,7 @@ $(STAGE3_LOADER): src/boot/stage3_loader.S
 
 $(STAGE3_MAIN): src/boot/stage3.c
 	@mkdir -p $(dir $@)
-	$(CROSS_CC) $(BOOTLOADER_CFLAGS) -Iinclude -c $< -o $@
+	$(CROSS_CC) $(BOOTLOADER_CFLAGS) -c $< -o $@
 
 $(STAGE3): $(STAGE3_LOADER) $(STAGE3_MAIN) src/boot/stage3.ld
 	@mkdir -p $(dir $@)
@@ -84,8 +96,16 @@ $(STAGE3): $(STAGE3_LOADER) $(STAGE3_MAIN) src/boot/stage3.ld
 
 $(BUILD_DIR)/effel/%.o: src/effel/%.c
 	@mkdir -p $(dir $@)
-	$(CROSS_CC) $(EFFEL_CFLAGS) -O2 -Wall -Wextra -c $< -o $@
+	$(CROSS_CC) $(EFFEL_CFLAGS) -c $< -o $@
 
-$(EFFEL): $(EFFEL_OBJ)
+$(EFFEL): $(EFFEL_OBJ) $(LIBK)
 	@mkdir -p $(dir $@)
-	$(CROSS_CC) $(EFFEL_CFLAGS) -T src/effel/effel.ld $(EFFEL_OBJ) -o $@
+	$(CROSS_CC) $(EFFEL_CFLAGS) -lk -T src/effel/effel.ld $(EFFEL_OBJ) -o $@
+
+$(LIBK): $(LIBK_OBJ)
+	@mkdir -p $(dir $@)
+	$(CROSS_AR) rcs $@ $(LIBK_OBJ)
+
+$(BUILD_DIR)/obj/libk/%.o: src/libc/%.c
+	@mkdir -p $(dir $@)
+	$(CROSS_CC) $(EFFEL_CFLAGS) -c $< -o $@
