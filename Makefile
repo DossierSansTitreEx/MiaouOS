@@ -22,6 +22,7 @@ endif
 
 BOOTLOADER_CFLAGS	:= $(COMMON_CFLAGS) -fno-builtin -fPIC -mcmodel=small
 EFFEL_CFLAGS		:= $(COMMON_CFLAGS) -mcmodel=kernel -D__KERNEL=1
+USER_CFLAGS			:= $(COMMON_CFLAGS) -fno-builtin -fPIC -mcmodel=small
 
 MAKE_VOLUME		:= tools/make_volume
 VOLUME_FILE		:= Volume.txt
@@ -47,6 +48,10 @@ LIBK_OBJ				:= $(LIBK_SRC:src/libc/%.c=$(BUILD_DIR)/obj/libk/%.o)
 
 DEPS					:= $(shell find $(BUILD_DIR) -name '*.d' 2>/dev/null)
 
+OS_SHELL				:= $(BUILD_DIR)/bin/sh
+OS_SHELL_SRC			:= $(shell find src/sh -name '*.c')
+OS_SHELL_OBJ			:= $(OS_SHELL_SRC:src/sh/%.c=$(BUILD_DIR)/obj/sh/%.o)
+
 .PHONY: all
 all: image
 
@@ -70,7 +75,7 @@ run: $(IMAGE)
 .PHONY: image
 image: $(IMAGE)
 
-$(IMAGE): $(BOOTLOADER_VOLUME) $(BOOTLOADER_PARTITION) $(EFFEL) $(MAKE_VOLUME) $(VOLUME_FILE)
+$(IMAGE): $(BOOTLOADER_VOLUME) $(BOOTLOADER_PARTITION) $(EFFEL) $(MAKE_VOLUME) $(VOLUME_FILE) $(OS_SHELL)
 	@mkdir -p $(dir $@)
 	$(MAKE_VOLUME) $(VOLUME_FILE) $@
 
@@ -122,3 +127,11 @@ $(LIBK): $(LIBK_OBJ)
 $(BUILD_DIR)/obj/libk/%.o: src/libc/%.c
 	@mkdir -p $(dir $@)
 	$(CROSS_CC) $(EFFEL_CFLAGS) -c $< -o $@
+
+$(OS_SHELL): $(OS_SHELL_OBJ)
+	@mkdir -p $(dir $@)
+	$(CROSS_CC) $(USER_CFLAGS) $(OS_SHELL_OBJ) -o $@
+
+$(BUILD_DIR)/obj/sh/%.o: src/sh/*.c
+	@mkdir -p $(dir $@)
+	$(CROSS_CC) $(USER_CFLAGS) -c $< -o $@
