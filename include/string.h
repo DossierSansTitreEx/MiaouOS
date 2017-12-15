@@ -16,6 +16,8 @@ char*   strcat(char* __restrict s1, const char* __restrict s2);
 char*   strncat(char* __restrict s1, const char* __restrict s2, size_t n);
 char*   strchr(const char* s, int c);
 char*   strrchr(const char* s, int c);
+int     strcmp(const char* s1, const char* s2);
+int     strncmp(const char* s1, const char* s2, size_t n);
 size_t  strlen(const char* s) __attribute__((pure));
 __END_DECL
 
