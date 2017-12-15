@@ -11,7 +11,7 @@ module MakeVolume
       File.open(@path, "r") do |file|
         file.each do |line|
           l = line.strip.split(" ")
-          next if l.empty?
+          next if l.empty? || l[0][0] == '#'
           commands << l
         end
       end

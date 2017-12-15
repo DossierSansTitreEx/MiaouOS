@@ -144,7 +144,7 @@ module MakeVolume
     def subdir_chunk(chunk, name)
       data = read_file(chunk)
       loop do
-        return 0 if data.size == 0
+        return 0 if (data.nil? || data.size == 0)
         size, data = slice_data(data, 2)
         size = size.unpack("S<")[0]
         str, data = slice_data(data, size)
@@ -165,17 +165,11 @@ module MakeVolume
       addr = chunk_addr(chunk)
       size = @buffer.read(addr + 0x38, 8).unpack("Q<")[0]
       data = []
-      head_size = size
-      if head_size > 0xee0
-        head_size = 0xee0
-      end
-      data << @buffer.read(addr + 0x120, head_size)
-      size -= head_size
       12.times do |i|
         break if size == 0
-        iaddr = addr + 0x40 + 8 * i
+        iaddr = @buffer.read(addr + 0x40 + 0x8 * i, 8).unpack('Q<')[0]
         head_size = [size, 4096].min
-        head = @buffer.read(iaddr, head_size)
+        head = @buffer.read(chunk_addr(iaddr), head_size)
         data << head
         size -= head_size
       end
