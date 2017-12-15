@@ -6,11 +6,20 @@ CROSS_LD		:= $(ARCH)-ld
 CROSS_OBJCOPY	:= $(ARCH)-objcopy
 CROSS_AR		:= $(ARCH)-ar
 
+DEBUG			?= 0
+
 BUILD_DIR		:= build
 
 COMMON_CFLAGS		:= 	-Iinclude -L$(BUILD_DIR)/lib -pipe -MMD -ffreestanding -nostdlib \
 						-msse -msse2 -z max-page-size=0x1000 -mno-red-zone               \
-						-O2 -Wall -Wextra
+						-Wall -Wextra
+
+ifneq ($(DEBUG), 0)
+	COMMON_CFLAGS += -O0 -g
+else
+	COMMON_CFLAGS += -O2
+endif
+
 BOOTLOADER_CFLAGS	:= $(COMMON_CFLAGS) -fno-builtin -fPIC -mcmodel=small
 EFFEL_CFLAGS		:= $(COMMON_CFLAGS) -mcmodel=kernel -D__KERNEL=1
 
