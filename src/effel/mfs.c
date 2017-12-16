@@ -16,7 +16,7 @@ void mfs_init(uint8_t device, uint64_t lba)
     mfs.lba = lba;
 
     for (size_t i = 0; i < 4; ++i)
-        mfs.buffers[i] = vmm_alloc(4096);
+        mfs.buffers[i] = vmm_alloc(4096, 0);
     read_inode(mfs.buffers[0], 0);
     mfs.root = *(uint64_t*)(mfs.buffers[0] + 0x18);
 }

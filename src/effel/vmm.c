@@ -184,30 +184,33 @@ static void init_mem_store(boot_params* params)
     vmm.free_pages_capacity = 0;
 }
 
-static void map_page_raw(uint64_t virtual_addr, uint64_t physical_addr)
+static void touch_page_dir(uint16_t a, uint16_t b, uint16_t c, uint16_t d, uint32_t flags)
+{
+    uint64_t* tmp;
+    uint64_t req_mask;
+
+    tmp = addr5(PAGE_RECURSE, a, b, c, d);
+    req_mask = ((flags & (VMM_USER | VMM_WRITE)) | 1);
+
+    if ((*tmp & 1) == 0)
+        *tmp = (physical_page() | req_mask);
+    else if ((*tmp & req_mask) != req_mask)
+        *tmp |= req_mask;
+}
+
+static void map_page_raw(uint64_t virtual_addr, uint64_t physical_addr, uint32_t flags)
 {
     uint16_t v[4];
     uint64_t* tmp;
 
     raddr4(v, virtual_addr);
 
-    /* Check in PML4 */
-    tmp = addr5(PAGE_RECURSE, PAGE_RECURSE, PAGE_RECURSE, PAGE_RECURSE, v[0]);
-    if ((*tmp & 1) == 0)
-        *tmp = (physical_page() | 3);
-
-    /* Check in PDP */
-    tmp = addr5(PAGE_RECURSE, PAGE_RECURSE, PAGE_RECURSE, v[0], v[1]);
-    if ((*tmp & 1) == 0)
-        *tmp = (physical_page() | 3);
-
-    /* Check in PD */
-    tmp = addr5(PAGE_RECURSE, PAGE_RECURSE, v[0], v[1], v[2]);
-    if ((*tmp & 1) == 0)
-        *tmp = (physical_page() | 3);
+    touch_page_dir(PAGE_RECURSE, PAGE_RECURSE, PAGE_RECURSE, v[0], flags);
+    touch_page_dir(PAGE_RECURSE, PAGE_RECURSE, v[0], v[1], flags);
+    touch_page_dir(PAGE_RECURSE, v[0], v[1], v[2], flags);
 
     tmp = addr5(PAGE_RECURSE, v[0], v[1], v[2], v[3]);
-    *tmp = (physical_addr | 3);
+    *tmp = (physical_addr | flags | 1);
 }
 
 static size_t page_count_from_size(size_t size)
@@ -215,37 +218,37 @@ static size_t page_count_from_size(size_t size)
     return (size + (PAGESIZE - 1)) / PAGESIZE;
 }
 
-static void map_pages_raw(uint64_t virtual_addr, uint64_t physical_addr, size_t size)
+static void map_pages_raw(uint64_t virtual_addr, uint64_t physical_addr, size_t size, uint32_t flags)
 {
     size_t count;
 
     count = page_count_from_size(size);
     for (size_t i = 0; i < count; ++i)
-        map_page_raw(virtual_addr + i * PAGESIZE, physical_addr + i * PAGESIZE);
+        map_page_raw(virtual_addr + i * PAGESIZE, physical_addr + i * PAGESIZE, flags);
 }
 
-void* vmm_alloc_over(uint64_t physical_addr, size_t size)
+void* vmm_alloc_over(uint64_t physical_addr, size_t size, uint32_t flags)
 {
     uint64_t vaddr;
     size_t count;
 
     count = page_count_from_size(size);
     vaddr = alloc_vaddr(count * PAGESIZE);
-    map_pages_raw(vaddr, physical_addr, size);
+    map_pages_raw(vaddr, physical_addr, size, flags);
     return (void*)vaddr;
 }
 
-void* vmm_alloc(size_t size)
+void* vmm_alloc(size_t size, uint32_t flags)
 {
     uint64_t vaddr;
     size_t count;
 
     count = page_count_from_size(size);
     vaddr = alloc_vaddr(count * PAGESIZE);
-    return vmm_allocv(vaddr, size);
+    return vmm_allocv(vaddr, size, flags);
 }
 
-void* vmm_allocv(uint64_t vaddr, size_t size)
+void* vmm_allocv(uint64_t vaddr, size_t size, uint32_t flags)
 {
     size_t count;
 
@@ -253,7 +256,7 @@ void* vmm_allocv(uint64_t vaddr, size_t size)
     vaddr &= PAGE_MASK;
     count = page_count_from_size(size);
     for (size_t i = 0; i < count; ++i)
-        map_page_raw(vaddr + i * PAGESIZE, physical_page());
+        map_page_raw(vaddr + i * PAGESIZE, physical_page(), flags);
     return (void*)vaddr;
 }
 
@@ -302,9 +305,9 @@ uint64_t vmm_kfork()
     uint64_t* vaddr;
 
     physical = physical_page();
-    vaddr = vmm_alloc_over(physical, PAGESIZE);
+    vaddr = vmm_alloc_over(physical, PAGESIZE, 0);
     vaddr[511] = *(addr5(PAGE_RECURSE, PAGE_RECURSE, PAGE_RECURSE, PAGE_RECURSE, 511));
-    vaddr[510] = (physical | 3);
+    vaddr[510] = (physical | 1);
     vmm_switch(physical);
     return physical;
 }

@@ -76,7 +76,7 @@ void kprint_hex(uint64_t num)
 
 void screen_init()
 {
-    monitor = vmm_alloc_over(0xb8000, 80 * 25 * 2);
+    monitor = vmm_alloc_over(0xb8000, 80 * 25 * 2, 0);
     cursor_x = 0;
     cursor_y = 0;
     for (int i = 0; i < 25; ++i)

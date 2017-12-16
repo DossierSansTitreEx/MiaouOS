@@ -5,16 +5,15 @@
 #include <string.h>
 #include <util.h>
 
-struct proc_table ptable;
+#define PROCJMP(addr, stack)    __asm__ __volatile__ ("movq %0, %%rsp\r\n" \
+                                                      "movq %0, %%rbp\r\n" \
+                                                      "jmp *%1\n\r" :: "r"((uint64_t)stack), "r"(addr));
 
-static void proc_jmp(uint64_t entry)
-{
-    __asm__ __volatile__ ("jmp *%%rax" :: "a" (entry));
-}
+struct proc_table ptable;
 
 void proc_init()
 {
-    ptable.procs = vmm_alloc(sizeof(struct proc) * 8092);
+    ptable.procs = vmm_alloc(sizeof(struct proc) * 8092, 0);
     ptable.proc_count = 0;
     ptable.running = 0;
 }
@@ -58,16 +57,18 @@ static void load_elf(struct proc* p, const mfs_fileinfo* info)
         p_filesz = *(uint64_t*)(section_header + 32);
         p_memsz = *(uint64_t*)(section_header + 40);
 
-        ptr = vmm_allocv(p_vaddr, p_memsz);
+        ptr = vmm_allocv(p_vaddr, p_memsz, VMM_USER | VMM_WRITE);
         if (p_filesz)
             mfs_read(ptr, info, p_offset, p_filesz);
         if (p_memsz > p_filesz)
             memset(ptr + p_filesz, 0, p_memsz - p_filesz);
     }
+    /* Allocate a stack */
+    vmm_allocv(0xa0000000, 0x4000, VMM_USER | VMM_WRITE);
 
     /* Jump into the proc. */
     /* We're still in kernel mode, next step is to ring3 */
-    proc_jmp(entry);
+    PROCJMP(entry, 0xa0000000);
 }
 
 void proc_create(const char* s)
