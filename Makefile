@@ -46,6 +46,10 @@ LIBK					:= $(BUILD_DIR)/lib/libk.a
 LIBK_SRC				:= $(shell find src/libc -name '*.c')
 LIBK_OBJ				:= $(LIBK_SRC:src/libc/%.c=$(BUILD_DIR)/obj/libk/%.o)
 
+LIBC					:= $(BUILD_DIR)/lib/libc.a
+LIBC_SRC				:= $(shell find src/libc -name '*.c' -or -name '*.S')
+LIBC_OBJ				:= $(LIBC_SRC:src/libc/%=$(BUILD_DIR)/obj/libc/%.o)
+
 DEPS					:= $(shell find $(BUILD_DIR) -name '*.d' 2>/dev/null)
 
 OS_SHELL				:= $(BUILD_DIR)/bin/sh
@@ -128,10 +132,22 @@ $(BUILD_DIR)/obj/libk/%.o: src/libc/%.c
 	@mkdir -p $(dir $@)
 	$(CROSS_CC) $(EFFEL_CFLAGS) -c $< -o $@
 
-$(OS_SHELL): $(OS_SHELL_OBJ)
+$(OS_SHELL): $(OS_SHELL_OBJ) $(LIBC)
 	@mkdir -p $(dir $@)
-	$(CROSS_CC) $(USER_CFLAGS) $(OS_SHELL_OBJ) -o $@
+	$(CROSS_CC) $(USER_CFLAGS) $(OS_SHELL_OBJ) -lc -lgcc -o $@
 
 $(BUILD_DIR)/obj/sh/%.o: src/sh/*.c
 	@mkdir -p $(dir $@)
 	$(CROSS_CC) $(USER_CFLAGS) -c $< -o $@
+
+$(LIBC): $(LIBC_OBJ)
+	@mkdir -p $(dir $@)
+	$(CROSS_AR) rcs $@ $(LIBC_OBJ)
+
+$(BUILD_DIR)/obj/libc/%.c.o: src/libc/%.c
+	@mkdir -p $(dir $@)
+	$(CROSS_CC) $(USER_CFLAGS) -c $< -o $@
+
+$(BUILD_DIR)/obj/libc/%.S.o: src/libc/%.S
+	@mkdir -p $(dir $@)
+	$(YASM) -f elf64 -o $@ $<
