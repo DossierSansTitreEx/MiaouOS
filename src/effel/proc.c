@@ -5,9 +5,13 @@
 #include <string.h>
 #include <util.h>
 
-#define PROCJMP(addr, stack)    __asm__ __volatile__ ("movq %0, %%rsp\r\n" \
-                                                      "movq %0, %%rbp\r\n" \
-                                                      "jmp *%1\n\r" :: "r"((uint64_t)stack), "r"(addr));
+#define PROCJMP(addr, stack)    __asm__ __volatile__ ("movq %0, %%rbp\r\n"      \
+                                                      "pushq $0x23\r\n"         \
+                                                      "pushq %0\r\n"            \
+                                                      "pushfq\r\n"              \
+                                                      "pushq $0x1b\r\n"         \
+                                                      "pushq %1\r\n"            \
+                                                      "iretq" :: "r"((uint64_t)stack), "r"(addr));
 
 struct proc_table ptable;
 
@@ -68,7 +72,7 @@ static void load_elf(struct proc* p, const mfs_fileinfo* info)
 
     /* Jump into the proc. */
     /* We're still in kernel mode, next step is to ring3 */
-    PROCJMP(entry, 0xa0000000);
+    PROCJMP(entry, 0xa0004000);
 }
 
 void proc_create(const char* s)
