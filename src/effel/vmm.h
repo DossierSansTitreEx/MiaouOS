@@ -6,8 +6,11 @@
 
 #define PAGESIZE 4096
 
-void vmm_init(boot_params* params);
-void* vmm_alloc_over(uint64_t physical_addr, size_t size);
-void* vmm_alloc(size_t size);
+void        vmm_init(boot_params* params);
+void*       vmm_alloc_over(uint64_t physical_addr, size_t size);
+void*       vmm_alloc(size_t size);
+void*       vmm_allocv(uint64_t vaddr, size_t size);
+void        vmm_switch(uint64_t pml4);
+uint64_t    vmm_kfork();
 
 #endif

@@ -250,10 +250,10 @@ void* vmm_alloc(size_t size)
 void reload_paging()
 {
     __asm__ __volatile__ (
-        "mov %%cr3, %%rax\r\n"
-        "mov %%rax, %%cr3\r\n"
-        ::: "rax"
-    );
+            "mov %%cr3, %%rax\r\n"
+            "mov %%rax, %%cr3\r\n"
+            ::: "rax"
+            );
 }
 
 void init_paging()
@@ -278,4 +278,22 @@ void vmm_init(boot_params* params)
     init_mem_store(params);
     init_free_list();
     init_paging();
+}
+
+void vmm_switch(uint64_t pml4)
+{
+    __asm__ __volatile__ ("mov %%rax, %%cr3" :: "a" (pml4));
+}
+
+uint64_t vmm_kfork()
+{
+    uint64_t physical;
+    uint64_t* vaddr;
+
+    physical = physical_page();
+    vaddr = vmm_alloc_over(physical, PAGESIZE);
+    vaddr[511] = *(addr5(PAGE_RECURSE, PAGE_RECURSE, PAGE_RECURSE, PAGE_RECURSE, 511));
+    vaddr[510] = (physical | 3);
+    vmm_switch(physical);
+    return physical;
 }

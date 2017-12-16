@@ -9,15 +9,16 @@ struct mfs
     uint8_t     device;
     uint64_t    lba;
     uint64_t    root;
-    char*       buffers[3];
+    char*       buffers[4];
 };
 
 struct mfs_fileinfo_
 {
     uint64_t    inode;
-    uint64_t    idata[12];
+    uint64_t    size;
+    uint64_t    data[12];
+    uint64_t    idata;
     uint64_t    idata2;
-    uint64_t    idata3;
 };
 
 typedef struct mfs_fileinfo_ mfs_fileinfo;
