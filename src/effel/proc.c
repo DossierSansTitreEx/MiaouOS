@@ -65,9 +65,11 @@ static void load_elf(struct proc* p, const mfs_fileinfo* info)
         if (p_memsz > p_filesz)
             memset(ptr + p_filesz, 0, p_memsz - p_filesz);
     }
+
     /* Allocate a stack */
     vmm_allocv(0xa0000000, 0x4000, VMM_USER | VMM_WRITE);
 
+    __asm__ __volatile__ ("xchg %bx, %bx");
     /* Jump into the proc. */
     /* We're still in kernel mode, next step is to ring3 */
     PROCJMP(entry, 0xa0004000);

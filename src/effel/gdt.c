@@ -30,8 +30,8 @@ struct gdt
 } __attribute__ ((packed));
 
 __attribute__ ((aligned (16)))
-struct gdt gdt;
-struct gdt_entry entries[5];
+static struct gdt gdt;
+static struct gdt_entry entries[5];
 
 static void gdt_init_seg(size_t seg, int code, int ring)
 {
