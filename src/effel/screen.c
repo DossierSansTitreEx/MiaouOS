@@ -43,6 +43,12 @@ void kputchar(char c)
     }
 }
 
+void kprint_raw(const char* s, size_t size)
+{
+    for (size_t i = 0; i < size; ++i)
+        kputchar(s[i]);
+}
+
 void kprint(const char* s)
 {
     for (uint32_t i = 0; s[i]; ++i)
