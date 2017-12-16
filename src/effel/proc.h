@@ -23,6 +23,5 @@ struct proc_table
 
 void    proc_init();
 void    proc_create(const char* s);
-void    proc_loop();
 
 #endif

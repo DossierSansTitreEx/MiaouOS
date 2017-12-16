@@ -24,8 +24,6 @@ void proc_init()
 
 static void load_elf(struct proc* p, const mfs_fileinfo* info)
 {
-    (void)p;
-
     char* ptr;
 
     char elf_header[64];
