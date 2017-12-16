@@ -1,3 +1,4 @@
+#include <gdt.h>
 #include <vmm.h>
 #include <screen.h>
 #include <proc.h>
@@ -11,6 +12,7 @@ void kmain(boot_params* params)
     device = params->drive;
     lba = params->mbr->lba_base;
 
+    gdt_init();
     vmm_init(params);
     screen_init();
     proc_init();
