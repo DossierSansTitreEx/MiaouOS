@@ -242,10 +242,21 @@ void* vmm_alloc(size_t size)
 
     count = page_count_from_size(size);
     vaddr = alloc_vaddr(count * PAGESIZE);
+    return vmm_allocv(vaddr, size);
+}
+
+void* vmm_allocv(uint64_t vaddr, size_t size)
+{
+    size_t count;
+
+    size += vaddr & 0xfff;
+    vaddr &= PAGE_MASK;
+    count = page_count_from_size(size);
     for (size_t i = 0; i < count; ++i)
         map_page_raw(vaddr + i * PAGESIZE, physical_page());
     return (void*)vaddr;
 }
+
 
 void reload_paging()
 {

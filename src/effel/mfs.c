@@ -122,7 +122,7 @@ void mfs_read(char* dst, const mfs_fileinfo* info, size_t offset, size_t length)
         else
         {
             read_inode(mfs.buffers[3], inode);
-            memcpy(dst, mfs.buffers[3], len);
+            memcpy(dst, mfs.buffers[3] + range_start, len);
         }
         dst += len;
     }

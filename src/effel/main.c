@@ -17,6 +17,7 @@ void kmain(boot_params* params)
     mfs_init(device, lba);
 
     kputs("Hello from the kernel!");
+    proc_create("/bin/sh");
 
     for (;;) {}
 }

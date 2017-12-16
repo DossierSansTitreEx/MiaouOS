@@ -55,6 +55,25 @@ void kputs(const char* s)
     kputchar('\n');
 }
 
+static void _kprint_hex(uint64_t num)
+{
+    static const char* const table = "0123456789abcdef";
+
+    uint8_t nibble;
+
+    nibble = num % 16;
+    num /= 16;
+    if (num)
+        _kprint_hex(num);
+    kputchar(table[nibble]);
+}
+
+void kprint_hex(uint64_t num)
+{
+    kprint("0x");
+    _kprint_hex(num);
+}
+
 void screen_init()
 {
     monitor = vmm_alloc_over(0xb8000, 80 * 25 * 2);
