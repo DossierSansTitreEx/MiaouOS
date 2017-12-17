@@ -20,8 +20,8 @@ void kmain(boot_params* params)
     syscall_init();
 
     kputs("Hello from the kernel!");
-    proc_create("/bin/sh");
-    proc_create("/bin/sh");
+    for (int i = 0; i < 10; ++i)
+        proc_create("/bin/sh");
 
     proc_schedule();
 

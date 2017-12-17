@@ -48,7 +48,45 @@ static void pic_init()
     io_wait();
 }
 
-static void register_isr(uint8_t slot, void* isr)
+void irq_enable(uint8_t line)
+{
+    uint16_t port;
+    uint8_t mask;
+
+    if (line < 8)
+    {
+        port = 0x21;
+    }
+    else
+    {
+        port = 0xa1;
+        line -= 8;
+    }
+    mask = inb(port);
+    mask &= ~(1 << line);
+    outb(port, mask);
+}
+
+void irq_disable(uint8_t line)
+{
+    uint16_t port;
+    uint8_t mask;
+
+    if (line < 8)
+    {
+        port = 0x21;
+    }
+    else
+    {
+        port = 0xa1;
+        line -= 8;
+    }
+    mask = inb(port);
+    mask |= (1 << line);
+    outb(port, mask);
+}
+
+void interrupt_register(uint8_t slot, void* isr)
 {
     uint64_t isr_value;
     struct idt_entry* e;

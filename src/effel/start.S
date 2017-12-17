@@ -1,6 +1,8 @@
 [BITS 64]
 
 SECTION .bss
+GLOBAL kernel_stack
+
 ALIGNB 16
     resb 4096 * 4
 kernel_stack:

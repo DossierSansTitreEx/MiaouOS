@@ -5,6 +5,11 @@
 #include <string.h>
 #include <util.h>
 #include <tss.h>
+#include <interrupt.h>
+#include <x86.h>
+
+void int_pit();
+void int_real_time_clock();
 
 #define PROCJMP(kstack)    __asm__ __volatile__ ("movq %0, %%rsp\r\n"         \
                                                  "popq %%r15\r\n"             \
@@ -26,10 +31,13 @@
 
 struct proc_table ptable;
 
-static void procjmp(void* kstack)
+static void procjmp(struct proc* p)
 {
+    void* kstack;
     void* tss_kstack;
 
+    __asm__ __volatile__ ("mov %0, %%cr3\r\n" :: "r" (p->pml4));
+    kstack = p->kstack;
     tss_kstack = (char*)kstack + 20 * 0x08;
     tss.rsp[0] = (uint64_t)tss_kstack;
     PROCJMP(kstack);
@@ -49,6 +57,30 @@ void proc_init()
     ptable.procs = vmm_alloc(sizeof(struct proc) * 8092, 0);
     ptable.proc_count = 0;
     ptable.running = 0;
+
+    /* Init the PIT */
+    interrupt_register(0x20, &int_pit);
+    irq_enable(0x00);
+
+#if 0
+    /* Init the RTC */
+    interrupt_register(0x20, &int_pit);
+    interrupt_register(0x28, &int_real_time_clock);
+    irq_enable(0x00);
+    irq_enable(0x02);
+    irq_enable(0x08);
+
+    outb(0x70, 0x8a);
+    outb(0x71, 0x20);
+    outb(0x70, 0x8b);
+    rtc_mask = inb(0x71);
+    outb(0x70, 0x8b);
+    outb(0x71, rtc_mask | 0x40);
+    outb(0x70, 0x0c);
+    inb(0x71);
+    __asm__ __volatile__ ("sti");
+    for (;;) {}
+#endif
 }
 
 static void proc_push64(struct proc* p, uint64_t value)
@@ -158,5 +190,13 @@ void proc_create(const char* s)
 void proc_schedule()
 {
     ptable.running = 0;
-    procjmp(ptable.procs->kstack);
+    procjmp(ptable.procs);
+}
+
+void proc_scheduler_main()
+{
+    ptable.running++;
+    if (ptable.running >= ptable.proc_count)
+        ptable.running = 0;
+    procjmp(ptable.procs + ptable.running);
 }
