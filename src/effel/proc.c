@@ -11,22 +11,24 @@
 void int_pit();
 void int_real_time_clock();
 
-#define PROCJMP(kstack)    __asm__ __volatile__ ("movq %0, %%rsp\r\n"         \
-                                                 "popq %%r15\r\n"             \
-                                                 "popq %%r14\r\n"             \
-                                                 "popq %%r13\r\n"             \
-                                                 "popq %%r12\r\n"             \
-                                                 "popq %%r11\r\n"             \
-                                                 "popq %%r10\r\n"             \
-                                                 "popq %%r9\r\n"              \
-                                                 "popq %%r8\r\n"              \
-                                                 "popq %%rsi\r\n"             \
-                                                 "popq %%rdi\r\n"             \
-                                                 "popq %%rdx\r\n"             \
-                                                 "popq %%rcx\r\n"             \
-                                                 "popq %%rbx\r\n"             \
-                                                 "popq %%rax\r\n"             \
-                                                 "popq %%rbp\r\n"             \
+#define PROCJMP(kstack)    __asm__ __volatile__ ("movq %0, %%rsp\r\n"             \
+                                                 "fxrstor (%%rsp)\r\n"            \
+                                                 "addq $512, %%rsp\r\n"           \
+                                                 "popq %%r15\r\n"                 \
+                                                 "popq %%r14\r\n"                 \
+                                                 "popq %%r13\r\n"                 \
+                                                 "popq %%r12\r\n"                 \
+                                                 "popq %%r11\r\n"                 \
+                                                 "popq %%r10\r\n"                 \
+                                                 "popq %%r9\r\n"                  \
+                                                 "popq %%r8\r\n"                  \
+                                                 "popq %%rsi\r\n"                 \
+                                                 "popq %%rdi\r\n"                 \
+                                                 "popq %%rdx\r\n"                 \
+                                                 "popq %%rcx\r\n"                 \
+                                                 "popq %%rbx\r\n"                 \
+                                                 "popq %%rax\r\n"                 \
+                                                 "popq %%rbp\r\n"                 \
                                                  "iretq\r\n" :: "r"(kstack));
 
 struct proc_table ptable;
@@ -81,6 +83,16 @@ void proc_init()
     __asm__ __volatile__ ("sti");
     for (;;) {}
 #endif
+}
+
+static void proc_push_sse(struct proc* p)
+{
+    char* ptr;
+
+    ptr = p->kstack;
+    ptr -= 512;
+    memset(ptr, 0, 512);
+    p->kstack = ptr;
 }
 
 static void proc_push64(struct proc* p, uint64_t value)
@@ -170,6 +182,8 @@ static void load_elf(struct proc* p, const mfs_fileinfo* info)
     proc_push64(p, 0x0);
     proc_push64(p, 0x0);
     proc_push64(p, 0x0);
+
+    proc_push_sse(p);
 }
 
 void proc_create(const char* s)

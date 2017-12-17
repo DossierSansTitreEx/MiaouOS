@@ -36,6 +36,10 @@ int_pit:
     push r14
     push r15
 
+    ; SSE registers
+    sub rsp, 512
+    fxsave [rsp]
+
     ; Load a kernel stack
     lea rsp, [REL kernel_stack]
     mov rbp, rsp
