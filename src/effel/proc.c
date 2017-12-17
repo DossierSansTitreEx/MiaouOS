@@ -70,6 +70,7 @@ static void load_elf(struct proc* p, const mfs_fileinfo* info)
 
     uint64_t entry;
     uint64_t section_offset;
+    uint64_t flags;
     uint16_t section_size;
     uint16_t section_count;
 
@@ -114,7 +115,10 @@ static void load_elf(struct proc* p, const mfs_fileinfo* info)
     /* Setup iret */
     proc_push64(p, 0x23);
     proc_push64(p, 0xa0004000);
-    proc_push64(p, rflags() & 0xfffffffffffffffe);
+    flags = rflags();
+    flags &= 0xfffffffffffffffe;
+    flags |= 0x0200;
+    proc_push64(p, flags);
     proc_push64(p, 0x2b);
     proc_push64(p, entry);
 
