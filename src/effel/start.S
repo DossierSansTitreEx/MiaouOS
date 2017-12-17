@@ -12,7 +12,7 @@ GLOBAL __start
 
 __start:
     ; Initialize the kernel stack
-    lea rax, [REL stack_top]
+    lea rax, [REL kernel_stack]
     mov rsp, rax
     mov rbp, rax
 

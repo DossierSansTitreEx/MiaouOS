@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <interrupt.h>
+#include <x86.h>
 #include <string.h>
 
 struct idt_entry
@@ -23,6 +24,30 @@ __attribute__ ((aligned (16)))
 static struct idt idt;
 static struct idt_entry entries[256];
 
+static void pic_init()
+{
+    outb(0x20, 0x11);
+    io_wait();
+    outb(0xa0, 0x11);
+    io_wait();
+    outb(0x21, 0x20);
+    io_wait();
+    outb(0xa1, 0x28);
+    io_wait();
+    outb(0x21, 0x04);
+    io_wait();
+    outb(0xa1, 0x02);
+    io_wait();
+    outb(0x21, 0x01);
+    io_wait();
+    outb(0xa1, 0x01);
+    io_wait();
+    outb(0x21, 0xff);
+    io_wait();
+    outb(0xa1, 0xff);
+    io_wait();
+}
+
 static void register_isr(uint8_t slot, void* isr)
 {
     uint64_t isr_value;
@@ -40,6 +65,7 @@ static void register_isr(uint8_t slot, void* isr)
 
 void interrupt_init()
 {
+    pic_init();
     memset(entries, 0, sizeof(entries));
     idt.size = sizeof(entries) - 1;
     idt.ptr = entries;
