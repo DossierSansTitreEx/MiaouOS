@@ -12,6 +12,8 @@ struct proc
 {
     uint64_t    pml4;
     uint64_t    flags;
+    void*       kstack;
+    void*       kstack_base;
 };
 
 struct proc_table
@@ -23,5 +25,6 @@ struct proc_table
 
 void    proc_init();
 void    proc_create(const char* s);
+void    proc_schedule();
 
 #endif

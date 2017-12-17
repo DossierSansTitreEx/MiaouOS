@@ -4,22 +4,61 @@
 #include <mfs.h>
 #include <string.h>
 #include <util.h>
+#include <tss.h>
 
-#define PROCJMP(addr, stack)    __asm__ __volatile__ ("movq %0, %%rbp\r\n"      \
-                                                      "pushq $0x23\r\n"         \
-                                                      "pushq %0\r\n"            \
-                                                      "pushfq\r\n"              \
-                                                      "pushq $0x2b\r\n"         \
-                                                      "pushq %1\r\n"            \
-                                                      "iretq" :: "r"((uint64_t)stack), "r"(addr));
+#define PROCJMP(kstack)    __asm__ __volatile__ ("movq %0, %%rsp\r\n"         \
+                                                 "popq %%r15\r\n"             \
+                                                 "popq %%r14\r\n"             \
+                                                 "popq %%r13\r\n"             \
+                                                 "popq %%r12\r\n"             \
+                                                 "popq %%r11\r\n"             \
+                                                 "popq %%r10\r\n"             \
+                                                 "popq %%r9\r\n"              \
+                                                 "popq %%r8\r\n"              \
+                                                 "popq %%rsi\r\n"             \
+                                                 "popq %%rdi\r\n"             \
+                                                 "popq %%rdx\r\n"             \
+                                                 "popq %%rcx\r\n"             \
+                                                 "popq %%rbx\r\n"             \
+                                                 "popq %%rax\r\n"             \
+                                                 "popq %%rbp\r\n"             \
+                                                 "iretq\r\n" :: "r"(kstack));
 
 struct proc_table ptable;
+
+static void procjmp(void* kstack)
+{
+    void* tss_kstack;
+
+    tss_kstack = (char*)kstack + 20 * 0x08;
+    tss.rsp[0] = (uint64_t)tss_kstack;
+    PROCJMP(kstack);
+}
+
+static uint64_t rflags()
+{
+    uint64_t v;
+
+    __asm__ __volatile__ ("pushfq\r\n"
+                          "popq %0\r\n" : "=r" (v));
+    return v;
+}
 
 void proc_init()
 {
     ptable.procs = vmm_alloc(sizeof(struct proc) * 8092, 0);
     ptable.proc_count = 0;
     ptable.running = 0;
+}
+
+static void proc_push64(struct proc* p, uint64_t value)
+{
+    uint64_t* ptr;
+
+    ptr = (uint64_t*)p->kstack;
+    ptr--;
+    *ptr = value;
+    p->kstack = ptr;
 }
 
 static void load_elf(struct proc* p, const mfs_fileinfo* info)
@@ -65,13 +104,36 @@ static void load_elf(struct proc* p, const mfs_fileinfo* info)
         if (p_memsz > p_filesz)
             memset(ptr + p_filesz, 0, p_memsz - p_filesz);
     }
+    /* Alloc a kernel stack */
+    p->kstack_base = vmm_alloc(0x1000, VMM_WRITE);
+    p->kstack = (char*)p->kstack_base + 0x1000;
 
     /* Allocate a stack */
     vmm_allocv(0xa0000000, 0x4000, VMM_USER | VMM_WRITE);
 
-    /* Jump into the proc. */
-    /* We're still in kernel mode, next step is to ring3 */
-    PROCJMP(entry, 0xa0004000);
+    /* Setup iret */
+    proc_push64(p, 0x23);
+    proc_push64(p, 0xa0004000);
+    proc_push64(p, rflags() & 0xfffffffffffffffe);
+    proc_push64(p, 0x2b);
+    proc_push64(p, entry);
+
+    /* Setup saved registers */
+    proc_push64(p, 0xa0004000); /* rbp last */
+    proc_push64(p, 0x0);
+    proc_push64(p, 0x0);
+    proc_push64(p, 0x0);
+    proc_push64(p, 0x0);
+    proc_push64(p, 0x0);
+    proc_push64(p, 0x0);
+    proc_push64(p, 0x0);
+    proc_push64(p, 0x0);
+    proc_push64(p, 0x0);
+    proc_push64(p, 0x0);
+    proc_push64(p, 0x0);
+    proc_push64(p, 0x0);
+    proc_push64(p, 0x0);
+    proc_push64(p, 0x0);
 }
 
 void proc_create(const char* s)
@@ -87,4 +149,10 @@ void proc_create(const char* s)
     p->flags = 0;
     p->pml4 = vmm_kfork();
     load_elf(p, &info);
+}
+
+void proc_schedule()
+{
+    ptable.running = 0;
+    procjmp(ptable.procs->kstack);
 }

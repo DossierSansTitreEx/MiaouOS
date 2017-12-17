@@ -21,6 +21,9 @@ void kmain(boot_params* params)
 
     kputs("Hello from the kernel!");
     proc_create("/bin/sh");
+    proc_create("/bin/sh");
+
+    proc_schedule();
 
     for (;;) {}
 }
