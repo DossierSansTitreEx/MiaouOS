@@ -1,4 +1,5 @@
 #include <gdt.h>
+#include <tss.h>
 #include <vmm.h>
 #include <screen.h>
 #include <proc.h>
@@ -15,6 +16,7 @@ void kmain(boot_params* params)
     lba = params->mbr->lba_base;
 
     gdt_init();
+    tss_init();
     vmm_init(params);
     interrupt_init();
     screen_init();

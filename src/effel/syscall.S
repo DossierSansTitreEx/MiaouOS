@@ -60,7 +60,7 @@ syscall_set_handler:
     wrmsr
 
     xor rax, rax
-    mov rdx, 0x231b1008
+    mov rdx, 0x00180008
     mov rcx, 0xc0000081
     wrmsr
 

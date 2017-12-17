@@ -44,5 +44,4 @@ void interrupt_init()
     idt.size = sizeof(entries) - 1;
     idt.ptr = entries;
     __asm__ __volatile__ ("lidt (%0)\r\n" :: "r" (&idt));
-    __asm__ __volatile__ ("sti\r\n");
 }

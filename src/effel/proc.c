@@ -9,7 +9,7 @@
                                                       "pushq $0x23\r\n"         \
                                                       "pushq %0\r\n"            \
                                                       "pushfq\r\n"              \
-                                                      "pushq $0x1b\r\n"         \
+                                                      "pushq $0x2b\r\n"         \
                                                       "pushq %1\r\n"            \
                                                       "iretq" :: "r"((uint64_t)stack), "r"(addr));
 
@@ -69,7 +69,6 @@ static void load_elf(struct proc* p, const mfs_fileinfo* info)
     /* Allocate a stack */
     vmm_allocv(0xa0000000, 0x4000, VMM_USER | VMM_WRITE);
 
-    __asm__ __volatile__ ("xchg %bx, %bx");
     /* Jump into the proc. */
     /* We're still in kernel mode, next step is to ring3 */
     PROCJMP(entry, 0xa0004000);
