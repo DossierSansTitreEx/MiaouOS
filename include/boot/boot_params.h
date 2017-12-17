@@ -30,7 +30,7 @@ struct dpte
     uint16_t    port_io;
     uint16_t    port_ctl;
     uint8_t     head;
-    uint8_t     padding[13];
+    uint8_t     padding[11];
 
 } __attribute__ ((packed));
 

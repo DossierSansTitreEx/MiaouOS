@@ -411,7 +411,6 @@ void start(boot_params* params)
     putchar('\n');
 
     dump_memory_map(params);
-
     load_effel(params);
 
     for (;;) {}

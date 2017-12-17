@@ -54,8 +54,46 @@ BOOT_INFO:
 
 ALIGN 16
 DRIVE_INFO:
-    dw 0x42
-    times 40 db 0
+    dw 0x1e
+    times 0x1c db 0
+
+print:
+    pusha
+
+    xor dx, dx
+    mov bx, 0x0007
+    mov cx, 1
+
+.loop:
+    mov ah, 0x02
+    int 0x10
+    inc dx
+
+    mov al, [si]
+    test al, al
+    jz .loop_end
+    mov ah, 0x09
+    int 0x10
+    inc si
+    jmp .loop
+
+.loop_end:
+    popa
+    ret
+
+print_fatal:
+    call print
+    jmp die
+
+die:
+    hlt
+    jmp die
+
+err_no_edd:
+    mov si, .msg
+    call print_fatal
+.msg:
+    db 'EDD call failed', 0
 
 stack_setup:
     xor ax, ax
@@ -80,6 +118,7 @@ stack_setup:
     mov si, DRIVE_INFO
     mov ah, 0x48
     int 0x13
+    jc err_no_edd
     mov ax, [DRIVE_INFO + 0x1a]
     mov si, ax
     mov ax, [DRIVE_INFO + 0x1a + 2]
