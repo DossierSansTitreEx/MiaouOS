@@ -7,14 +7,18 @@ static struct mfs mfs;
 
 static void read_inode(char* dst, uint64_t inode)
 {
-    ata_read(dst, mfs.lba + 40 + inode * 8, 8);
+    ata_read(dst, mfs.lba + 40 + inode * 8, 8, &mfs.dpte);
 }
 
-void mfs_init(uint8_t device, uint64_t lba)
+void mfs_init(const boot_params* params)
 {
-    mfs.device = device;
-    mfs.lba = lba;
+    mfs.device = params->drive;
+    mfs.lba = params->mbr->lba_base;
+    mfs.dpte = params->dpte;
+}
 
+void mfs_init_buffers()
+{
     for (size_t i = 0; i < 4; ++i)
         mfs.buffers[i] = vmm_alloc(4096, 0);
     read_inode(mfs.buffers[0], 0);

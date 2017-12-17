@@ -11,7 +11,7 @@ struct file_info_
 
 typedef struct file_info_ file_info;
 
-void disk_read(void* dst, uint64_t lba, uint64_t count);
+void disk_read(void* dst, uint64_t lba, uint64_t count, void* dpte);
 
 static volatile char* monitor;
 static uint16_t cursor_x;
@@ -220,7 +220,7 @@ static char* disk_buffer(uint64_t lba, uint64_t count)
     char* dst;
 
     dst = (char*)0x10000;
-    disk_read(dst, lba, count);
+    disk_read(dst, lba, count, &g_params->dpte);
     return dst;
 }
 

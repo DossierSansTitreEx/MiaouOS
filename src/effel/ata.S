@@ -3,6 +3,10 @@
 SECTION .text
 GLOBAL ata_read
 
+; RDI - destination
+; RSI - LBA
+; RDX - count
+; RCX - DPTE
 ata_read:
     pushfq
 
@@ -11,54 +15,70 @@ ata_read:
     push rcx
     push rdx
     push rdi
-    
+    push r8
+    push r9
+
+    xor rax, rax
+    mov r8, [rcx]
+    add rcx, 4
+    mov al, [rcx]
+    mov r9, rax
+
     and rsi, 0x0FFFFFFF
     mov rax, rsi
     mov rcx, rdx
 
-    mov rbx, rax         ; Save LBA in RBX
+    mov rbx, rax
 
-    mov edx, 0x01F6      ; Port to send drive and bit 24 - 27 of LBA
-    shr eax, 24          ; Get bit 24 - 27 in al
-    or al, 11100000b     ; Set bit 6 in al for LBA mode
+    mov rdx, r8
+    add dx, 6
+    shr eax, 24
+    or rax, r9
     out dx, al
 
-    mov edx, 0x01F2      ; Port to send number of sectors
-    mov al, cl           ; Get number of sectors from CL
+    mov rdx, r8
+    add dx, 2
+    mov al, cl
     out dx, al
 
-    mov edx, 0x1F3       ; Port to send bit 0 - 7 of LBA
-    mov eax, ebx         ; Get LBA from EBX
+    mov rdx, r8
+    add dx, 3
+    mov eax, ebx
     out dx, al
 
-    mov edx, 0x1F4       ; Port to send bit 8 - 15 of LBA
-    mov eax, ebx         ; Get LBA from EBX
-    shr eax, 8           ; Get bit 8 - 15 in AL
+    mov rdx, r8
+    add dx, 4
+    mov eax, ebx
+    shr eax, 8
     out dx, al
 
-
-    mov edx, 0x1F5       ; Port to send bit 16 - 23 of LBA
-    mov eax, ebx         ; Get LBA from EBX
-    shr eax, 16          ; Get bit 16 - 23 in AL
+    mov rdx, r8
+    add dx, 5
+    mov eax, ebx
+    shr eax, 16
     out dx, al
 
-    mov edx, 0x1F7       ; Command port
-    mov al, 0x20         ; Read with retry.
+    mov rdx, r8
+    add dx, 7
+    mov al, 0x20
     out dx, al
 
 .retry:
     in al, dx
-    test al, 8           ; the sector buffer requires servicing.
-    jz .retry            ; until the sector buffer is ready.
+    test al, 8
+    jz .retry
 
-    mov rax, 256         ; to read 256 words = 1 sector
+    mov rax, 256
     xor bx, bx
-    mov bl, cl           ; read CL sectors
+    mov bl, cl
     mul bx
-    mov rcx, rax         ; RCX is counter for INSW
-    mov rdx, 0x1F0       ; Data port, in and out
-    rep insw             ; in to [RDI]
+    mov rcx, rax
 
+    mov rdx, r8
+    rep insw
+
+    pop r9
+    pop r8
     pop rdi
     pop rdx
     pop rcx

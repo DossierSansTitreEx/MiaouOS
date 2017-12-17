@@ -47,9 +47,15 @@ BOOT_INFO:
     dq MEMORY_INFO
 .mbr:
     dq 0
+.dpte:
+    times 16 db 0
 .drive:
     db 0
-ALIGN 16, db 0
+
+ALIGN 16
+DRIVE_INFO:
+    dw 0x42
+    times 40 db 0
 
 stack_setup:
     xor ax, ax
@@ -68,6 +74,22 @@ stack_setup:
 
     ; Enable the A20 gate to prepare for long mode
     call fast_a20
+
+    ; Get the drive info
+    mov dl, [BOOT_INFO.drive]
+    mov si, DRIVE_INFO
+    mov ah, 0x48
+    int 0x13
+    mov ax, [DRIVE_INFO + 0x1a]
+    mov si, ax
+    mov ax, [DRIVE_INFO + 0x1a + 2]
+    mov ds, ax
+    mov di, BOOT_INFO.dpte
+    mov cx, 8
+    rep movsw
+
+    xor ax, ax
+    mov ds, ax
 
     ; Load the memory map
     call detect_memory

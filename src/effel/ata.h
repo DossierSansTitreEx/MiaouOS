@@ -3,6 +3,6 @@
 
 #include <stdint.h>
 
-void ata_read(void* dst, uint64_t lba, size_t size);
+void ata_read(void* dst, uint64_t lba, size_t size, void* dpte);
 
 #endif
