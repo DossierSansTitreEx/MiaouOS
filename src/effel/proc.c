@@ -40,7 +40,7 @@ static void procjmp(struct proc* p)
 
     __asm__ __volatile__ ("mov %0, %%cr3\r\n" :: "r" (p->pml4));
     kstack = p->kstack;
-    tss_kstack = (char*)kstack + 20 * 0x08;
+    tss_kstack = (char*)kstack + 20 * 0x08 + 512;
     tss.rsp[0] = (uint64_t)tss_kstack;
     PROCJMP(kstack);
 }

@@ -48,5 +48,4 @@ int_pit:
 
 int_real_time_clock:
     cli
-    xchg bx, bx
     iretq

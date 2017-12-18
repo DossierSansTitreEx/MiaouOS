@@ -29,6 +29,7 @@ syscall_handler:
     lea rsp, [REL sstack_end]
     mov rbp, rsp
 
+    ;push r11
     push rbx
     mov rbx, rax
     lea rax, [REL sys_table]
@@ -40,8 +41,10 @@ syscall_handler:
     call [rax]
     pop rcx
 
+    pop r11
     mov rbp, [REL user_rbp]
     mov rsp, [REL user_rsp]
+    or r11, 0x200
     o64 sysret
 
 syscall_set_handler:
@@ -62,6 +65,11 @@ syscall_set_handler:
     xor rax, rax
     mov rdx, 0x00180008
     mov rcx, 0xc0000081
+    wrmsr
+
+    xor rdx, rdx
+    mov rax, 0x200
+    mov rcx, 0xc0000084
     wrmsr
 
     pop rcx
