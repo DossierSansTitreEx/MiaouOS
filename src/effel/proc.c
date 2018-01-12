@@ -11,38 +11,34 @@
 void int_pit();
 void int_real_time_clock();
 
-#define PROCJMP(kstack)    __asm__ __volatile__ ("movq %0, %%rsp\r\n"             \
-                                                 "fxrstor (%%rsp)\r\n"            \
-                                                 "addq $512, %%rsp\r\n"           \
-                                                 "popq %%r15\r\n"                 \
-                                                 "popq %%r14\r\n"                 \
-                                                 "popq %%r13\r\n"                 \
-                                                 "popq %%r12\r\n"                 \
-                                                 "popq %%r11\r\n"                 \
-                                                 "popq %%r10\r\n"                 \
-                                                 "popq %%r9\r\n"                  \
-                                                 "popq %%r8\r\n"                  \
-                                                 "popq %%rsi\r\n"                 \
-                                                 "popq %%rdi\r\n"                 \
-                                                 "popq %%rdx\r\n"                 \
-                                                 "popq %%rcx\r\n"                 \
-                                                 "popq %%rbx\r\n"                 \
-                                                 "popq %%rax\r\n"                 \
-                                                 "popq %%rbp\r\n"                 \
-                                                 "iretq\r\n" :: "r"(kstack));
-
 struct proc_table ptable;
 
 static void procjmp(struct proc* p)
 {
-    void* kstack;
-    void* tss_kstack;
-
     __asm__ __volatile__ ("mov %0, %%cr3\r\n" :: "r" (p->pml4));
-    kstack = p->kstack;
-    tss_kstack = (char*)kstack + 20 * 0x08 + 512;
-    tss.rsp[0] = (uint64_t)tss_kstack;
-    PROCJMP(kstack);
+    __asm__ __volatile__ (
+            "pushq   0(%%rax)\r\n"
+            "pushq   8(%%rax)\r\n"
+            "pushq  16(%%rax)\r\n"
+            "pushq  24(%%rax)\r\n"
+            "pushq  32(%%rax)\r\n"
+            "movq   48(%%rax), %%rbx\r\n"
+            "movq   56(%%rax), %%rcx\r\n"
+            "movq   64(%%rax), %%rdx\r\n"
+            "movq   72(%%rax), %%rsi\r\n"
+            "movq   80(%%rax), %%rdi\r\n"
+            "movq   88(%%rax), %%rbp\r\n"
+            "movq   96(%%rax), %%r8\r\n"
+            "movq  104(%%rax), %%r9\r\n"
+            "movq  112(%%rax), %%r10\r\n"
+            "movq  120(%%rax), %%r11\r\n"
+            "movq  128(%%rax), %%r12\r\n"
+            "movq  136(%%rax), %%r13\r\n"
+            "movq  144(%%rax), %%r14\r\n"
+            "movq  152(%%rax), %%r15\r\n"
+            "movq   40(%%rax), %%rax\r\n"
+            "iretq\r\n"
+            :: "a" (p->cpu_state));
 }
 
 static uint64_t rflags()
@@ -54,6 +50,11 @@ static uint64_t rflags()
     return v;
 }
 
+struct proc* proc_current()
+{
+    return ptable.procs + ptable.running;
+}
+
 void proc_init()
 {
     ptable.procs = vmm_alloc(sizeof(struct proc) * 8092, 0);
@@ -63,46 +64,6 @@ void proc_init()
     /* Init the PIT */
     interrupt_register(0x20, &int_pit);
     irq_enable(0x00);
-
-#if 0
-    /* Init the RTC */
-    interrupt_register(0x20, &int_pit);
-    interrupt_register(0x28, &int_real_time_clock);
-    irq_enable(0x00);
-    irq_enable(0x02);
-    irq_enable(0x08);
-
-    outb(0x70, 0x8a);
-    outb(0x71, 0x20);
-    outb(0x70, 0x8b);
-    rtc_mask = inb(0x71);
-    outb(0x70, 0x8b);
-    outb(0x71, rtc_mask | 0x40);
-    outb(0x70, 0x0c);
-    inb(0x71);
-    __asm__ __volatile__ ("sti");
-    for (;;) {}
-#endif
-}
-
-static void proc_push_sse(struct proc* p)
-{
-    char* ptr;
-
-    ptr = p->kstack;
-    ptr -= 512;
-    memset(ptr, 0, 512);
-    p->kstack = ptr;
-}
-
-static void proc_push64(struct proc* p, uint64_t value)
-{
-    uint64_t* ptr;
-
-    ptr = (uint64_t*)p->kstack;
-    ptr--;
-    *ptr = value;
-    p->kstack = ptr;
 }
 
 static void load_elf(struct proc* p, const mfs_fileinfo* info)
@@ -149,41 +110,24 @@ static void load_elf(struct proc* p, const mfs_fileinfo* info)
         if (p_memsz > p_filesz)
             memset(ptr + p_filesz, 0, p_memsz - p_filesz);
     }
-    /* Alloc a kernel stack */
-    p->kstack_base = vmm_alloc(0x1000, VMM_WRITE);
-    p->kstack = (char*)p->kstack_base + 0x1000;
+    /* Alloc the CPU state */
+    struct cpu_state* state;
+    state = vmm_alloc(0x1000, VMM_WRITE);
+    p->cpu_state = state;
+    memset(state, 0, sizeof(*state));
 
     /* Allocate a stack */
     vmm_allocv(0xa0000000, 0x4000, VMM_USER | VMM_WRITE);
 
-    /* Setup iret */
-    proc_push64(p, 0x23);
-    proc_push64(p, 0xa0004000);
+    /* Setup the state */
+    state->ss = 0x23;
+    state->rsp = state->rbp = 0xa0004000;
     flags = rflags();
     flags &= 0xfffffffffffffffe;
     flags |= 0x0200;
-    proc_push64(p, flags);
-    proc_push64(p, 0x2b);
-    proc_push64(p, entry);
-
-    /* Setup saved registers */
-    proc_push64(p, 0xa0004000); /* rbp last */
-    proc_push64(p, 0x0);
-    proc_push64(p, 0x0);
-    proc_push64(p, 0x0);
-    proc_push64(p, 0x0);
-    proc_push64(p, 0x0);
-    proc_push64(p, 0x0);
-    proc_push64(p, 0x0);
-    proc_push64(p, 0x0);
-    proc_push64(p, 0x0);
-    proc_push64(p, 0x0);
-    proc_push64(p, 0x0);
-    proc_push64(p, 0x0);
-    proc_push64(p, 0x0);
-    proc_push64(p, 0x0);
-
-    proc_push_sse(p);
+    state->rflags = flags;
+    state->cs = 0x2b;
+    state->rip = entry;
 }
 
 void proc_create(const char* s)
