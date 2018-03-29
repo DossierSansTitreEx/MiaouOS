@@ -21,11 +21,11 @@ long_mode:
 
     ; Enable SSE
     mov rax, cr0
-    and ax, 0xfffb
-    or ax, 0x0002
+    and rax, 0xfffffffffffffffb
+    or rax, 0x0002
     mov cr0, rax
     mov rax, cr4
-    or ax, 0x0600
+    or rax, 0x0600
     mov cr4, rax
 
     jmp start
@@ -54,7 +54,7 @@ disk_read:
     push r8
     push r9
 
-    xor rax, rax
+    xor eax, eax
     mov r8, [rcx]
     add rcx, 4
     mov al, [rcx]
