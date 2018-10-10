@@ -11,7 +11,7 @@ DEBUG			?= 0
 BUILD_DIR		:= build
 
 COMMON_CFLAGS		:= 	-Iinclude -L$(BUILD_DIR)/lib -pipe -MMD -ffreestanding -nostdlib \
-						-msse -msse2 -z max-page-size=0x1000 -mno-red-zone               \
+						-msse -msse2 -z max-page-size=0x1000 -mno-red-zone -fomit-frame-pointer \
 						-Wall -Wextra
 
 ifneq ($(DEBUG), 0)
