@@ -6,9 +6,9 @@ The disk is sliced in chunks
 A chunk is 4kb.
 
 A section is a set of 0x8000 chunks.
-The first chunk of a section contains a bitmap of the next 0x7fff chunks.
+The last chunk of a section contains a bitmap of the previous 0x7fff chunks.
 
-The first chunk (including the VBR) is reserved. The second chunk contains the header.
+Chunks 0-9 (including the VBR) are reserved. Chunk 10 contains the header.
 
 | name           | size |  offset | description                   |
 |----------------|------|---------|-------------------------------|

@@ -10,11 +10,12 @@ module MakeVolume
   }
 
   CHUNK_SIZE = 4096
+  MBR_RESERVED = CHUNK_SIZE * 10
+  VBR_RESERVED = CHUNK_SIZE * 10
   SECTION_COUNT = CHUNK_SIZE * 8
   SECTION_SIZE = SECTION_COUNT * CHUNK_SIZE
-  VOLUME_START = 512 * 40
-  VOLUME_HEADER = VOLUME_START + 512 * 40
-  VOLUME_DATA = VOLUME_HEADER + CHUNK_SIZE
+  VOLUME_START = MBR_RESERVED
+  VOLUME_HEADER = VOLUME_START + VBR_RESERVED
   MBR_TABLE = 446
 
   class Builder
@@ -27,9 +28,22 @@ module MakeVolume
       size = @commands.shift[1]
       suffix = size[-1]
       size = size[0..-2].to_i * (1024 ** SIZE_SUFFIXES[suffix])
+      # First, we need to round up to a section multiple
+      # ignoring MBR space
+      section_count = ((size - MBR_RESERVED).to_f / SECTION_SIZE.to_f).ceil
+      size = section_count * SECTION_SIZE + MBR_RESERVED
+
       # We need to round this up for valid CHS values
-      @size = (size.to_f / CHUNK_SIZE.to_f).ceil * CHUNK_SIZE
+      @size = ((size.to_f / CHUNK_SIZE.to_f).ceil * CHUNK_SIZE).to_i
       @buffer = ByteBuffer.new(@size)
+
+      # Mark the section FAT themselves as used
+      section_count.times {|i| mark_chunk_as_used(i * SECTION_COUNT + SECTION_COUNT - 1)}
+
+      # Mark the VBR + the Header Chunk as used
+      reserved_chunks = (VBR_RESERVED.to_f / CHUNK_SIZE.to_f).ceil + 1
+      reserved_chunks.times {|i| mark_chunk_as_used(i)}
+
       @root = create_root
       @commands.each do |com|
         exec_command(com)
@@ -46,10 +60,10 @@ module MakeVolume
           data = file.read
           copy_file_to_path(data, dst)
         end
-      elsif %w[BOOTLOADER_VOLUME BOOTLOADER_PARTITION].include? action
-        volume = (action == "BOOTLOADER_VOLUME")
-        size = 512 * 40
-        if volume
+      elsif %w[MBR BOOTLOADER].include? action
+        mbr = (action == "MBR")
+        size = mbr ? MBR_RESERVED : VBR_RESERVED
+        if mbr
           base = 0
         else
           base = VOLUME_START
@@ -59,7 +73,7 @@ module MakeVolume
           data, _ = slice_data(file.read, size)
           @buffer.write(base, data)
         end
-        fix_mbr if volume
+        fix_mbr if mbr
       end
     end
 
@@ -220,11 +234,11 @@ module MakeVolume
     end
 
     def chunk_addr(chunk)
-      VOLUME_DATA + (chunk - 1) * CHUNK_SIZE
+      VOLUME_START + chunk * CHUNK_SIZE
     end
 
     def find_free_chunk
-      c = 1
+      c = 0
       loop do
         break if chunk_free?(c)
         c += 1
@@ -238,7 +252,7 @@ module MakeVolume
       if info[1] == 0 && info[2] == 0
         false
       else
-        byte = @buffer.read(VOLUME_DATA + info[0] * SECTION_SIZE + info[1], 1)
+        byte = @buffer.read(VOLUME_START + info[0] * SECTION_SIZE + (SECTION_SIZE - CHUNK_SIZE) + info[1], 1)
         bit = byte.ord & (1 << info[2])
         bit == 0
       end
@@ -246,20 +260,16 @@ module MakeVolume
 
     def mark_chunk_as_used(index)
       info = decompose_chunk(index)
-      byte = @buffer.read(VOLUME_DATA + info[0] * SECTION_SIZE + info[1], 1)
+      byte = @buffer.read(VOLUME_START + info[0] * SECTION_SIZE + (SECTION_SIZE - CHUNK_SIZE) + info[1], 1)
       byte = (byte.ord | (1 << info[2])).chr
-      @buffer.write(VOLUME_DATA + info[0] * SECTION_SIZE + info[1], byte)
-      unless info[1] == 0 && info[2] == 0
-        mark_chunk_as_used((index - 1) / CHUNK_SIZE * CHUNK_SIZE + 1)
-      end
+      @buffer.write(VOLUME_START + info[0] * SECTION_SIZE + (SECTION_SIZE - CHUNK_SIZE) + info[1], byte)
     end
 
-    def decompose_chunk(index)
-      c = index - 1
-      section = c / SECTION_COUNT
-      c = c % SECTION_COUNT
-      byte = c / 8
-      bit = c % 8
+    def decompose_chunk(idx)
+      section = idx / SECTION_COUNT
+      idx = idx % SECTION_COUNT
+      byte = idx / 8
+      bit = idx % 8
       [section, byte, bit]
     end
   end

@@ -1,7 +1,7 @@
-SIZE 32M
+SIZE 128M
 
-BOOTLOADER_VOLUME       build/boot/bootloader_volume
-BOOTLOADER_PARTITION    build/boot/bootloader_partition
+MBR         build/boot/mbr
+BOOTLOADER  build/boot/bootloader
 
-FILE /boot/effel        build/effel/effel
-FILE /bin/sh            build/bin/sh
+FILE /boot/effel    build/effel/effel
+FILE /bin/sh        build/bin/sh
